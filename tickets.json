@@ -1,0 +1,20 @@
+[
+    {
+        "ticket_id": "TKT-6696",
+        "phone": "whatsapp:+16674475299",
+        "type": "HUMAN_SUPPORT",
+        "summary": "Customer requested a manager",
+        "time_created": "2026-03-30 14:54:13",
+        "status": "OPEN",
+        "lead_data": {
+            "name": "Unknown",
+            "pickup": "Unknown",
+            "dropoff": "Unknown",
+            "bedrooms": "Unknown",
+            "quote": "N/A",
+            "notes": "None"
+        },
+        "resolved_by": null,
+        "time_resolved": null
+    }
+]

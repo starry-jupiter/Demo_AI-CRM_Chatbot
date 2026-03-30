@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Lead CRM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 p-10 font-sans">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-end mb-6 border-b pb-4">
+            <h1 class="text-3xl font-bold text-slate-800">Moving Co. Lead Center</h1>
+            <div class="flex space-x-2">
+                <button onclick="switchTab('open')" id="btn-open" class="px-4 py-2 rounded bg-blue-600 text-white font-bold">Active</button>
+                <button onclick="switchTab('resolved')" id="btn-resolved" class="px-4 py-2 rounded bg-gray-200 text-gray-600 font-bold">History</button>
+            </div>
+        </div>
+
+        <div id="tab-open" class="bg-white rounded-xl shadow overflow-hidden">
+            <table class="w-full text-left">
+                <tr class="bg-slate-800 text-white text-xs uppercase">
+                    <th class="p-4">Name</th><th class="p-4">Type</th><th class="p-4">Quote</th><th class="p-4">Actions</th>
+                </tr>
+                {% for t in open_tickets|reverse %}
+                {% set row_color = 'bg-red-50' if t.type == 'HUMAN_SUPPORT' else 'bg-white' %}
+                {% set badge_color = 'bg-red-100 text-red-800 border-red-200' if t.type == 'HUMAN_SUPPORT' else 'bg-green-100 text-green-800 border-green-200' %}
+                <tr class="border-b {{ row_color }}">
+                    <td class="p-4 font-bold">{{ t.lead_data.name }}</td>
+                    <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-bold border {{ badge_color }}">{{ t.type }}</span></td>
+                    <td class="p-4 font-bold text-green-600">{{ t.lead_data.quote }}</td>
+                    <td class="p-4"><button onclick="openModal('{{ t.ticket_id }}')" class="bg-slate-700 text-white px-3 py-1 rounded text-sm hover:bg-slate-900">Open File</button></td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <div id="tab-resolved" class="hidden bg-white rounded-xl shadow overflow-hidden">
+             <table class="w-full text-left">
+                <tr class="bg-slate-800 text-white text-xs uppercase"><th class="p-4">Name</th><th class="p-4">Resolved By</th><th class="p-4">Details</th></tr>
+                {% for t in resolved_tickets|reverse %}
+                <tr class="border-b opacity-60">
+                    <td class="p-4 font-bold">{{ t.lead_data.name }}</td>
+                    <td class="p-4 text-sm text-gray-500">{{ t.resolved_by }} on {{ t.time_resolved }}</td>
+                    <td class="p-4"><button onclick="openModal('{{ t.ticket_id }}')" class="bg-gray-200 px-3 py-1 rounded text-sm">Review</button></td>
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+
+    {% for t in open_tickets + resolved_tickets %}
+    <div id="modal-{{ t.ticket_id }}" class="fixed inset-0 bg-black/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-md rounded-2xl overflow-hidden shadow-2xl">
+            <div class="bg-slate-800 p-4 text-white flex justify-between">
+                <h2 class="font-bold">Lead: {{ t.lead_data.name }}</h2>
+                <button onclick="closeModal('{{ t.ticket_id }}')" class="text-2xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div><p class="text-xs text-gray-400 font-bold uppercase">Pickup</p><p>{{ t.lead_data.pickup }}</p></div>
+                    <div><p class="text-xs text-gray-400 font-bold uppercase">Dropoff</p><p>{{ t.lead_data.dropoff }} ({{ t.lead_data.bedrooms }} BR)</p></div>
+                </div>
+                <div class="bg-blue-50 p-3 rounded-lg text-sm italic border border-blue-100">
+                    <strong>AI Notes:</strong> {{ t.lead_data.notes }}
+                </div>
+                <textarea id="notes-{{ t.ticket_id }}" class="w-full border p-2 text-sm rounded h-20" placeholder="Internal staff notes...">{{ t.lead_data.admin_notes or '' }}</textarea>
+                <div class="flex space-x-2">
+                    <button onclick="update('{{ t.ticket_id }}', 'CONTACTED')" class="flex-1 bg-yellow-400 py-2 rounded font-bold text-sm">Save & Contact</button>
+                    <button onclick="update('{{ t.ticket_id }}', 'RESOLVED')" class="flex-1 bg-green-600 py-2 rounded text-white font-bold text-sm">Close Ticket</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <script>
+        function switchTab(t){
+            document.getElementById('tab-open').classList.toggle('hidden', t==='resolved');
+            document.getElementById('tab-resolved').classList.toggle('hidden', t==='open');
+            document.getElementById('btn-open').className = t==='open' ? "px-4 py-2 rounded bg-blue-600 text-white font-bold" : "px-4 py-2 rounded bg-gray-200 text-gray-600 font-bold";
+            document.getElementById('btn-resolved').className = t==='resolved' ? "px-4 py-2 rounded bg-blue-600 text-white font-bold" : "px-4 py-2 rounded bg-gray-200 text-gray-600 font-bold";
+        }
+        function openModal(id){ document.getElementById('modal-'+id).classList.remove('hidden'); }
+        function closeModal(id){ document.getElementById('modal-'+id).classList.add('hidden'); }
+        function update(id, s){
+            let n = document.getElementById('notes-'+id).value;
+            let r = s==='RESOLVED' ? prompt("Resolved by?") : null;
+            fetch('/update_ticket/'+id, {
+                method:'POST', headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({status:s, admin_notes:n, resolver_name:r})
+            }).then(()=>window.location.reload());
+        }
+        setInterval(()=> { if(!document.querySelector('[id^="modal-"]:not(.hidden)')) location.reload(); }, 15000);
+    </script>
+</body>
+</html>
