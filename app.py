@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
-    api_key="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" # <--- PASTE YOUR GROQ KEY HERE!
+   api_key=os.getenv("GROQ_API_KEY") #connected to the .env file for security
 )
 
 chat_history = {}
